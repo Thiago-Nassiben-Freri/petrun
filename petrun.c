@@ -152,6 +152,8 @@ int main(void) {
                 DrawLine(0, groundY, screenWidth, groundY, WHITE);
                 DrawText(TextFormat("Score: %d", score), 25, 20, 20, WHITE);
                 DrawText(TextFormat("High Score: %d", hiscore), 25, 50, 20, GREEN);
+                DrawText("Press R to restart", 600, 25, 14, WHITE);
+                DrawText("Press Q to go to the menu", 600, 5, 14, WHITE);
                 
                 for (int i = 0; i < NUM_OBSTACLES; i++) {
                     DrawRectangle(
