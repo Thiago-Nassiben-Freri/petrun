@@ -157,7 +157,7 @@ int main(void) {
             velY += GRAVITY * dt;
             yPos += velY * dt;
             
-            // Impede cair
+            // Impede o jogador de cair para fora
             if (yPos > groundY - size) {
                 yPos = groundY - size;
                 velY = 0;    
