@@ -5,10 +5,8 @@
 #include <time.h>
 
 #define NUM_OBSTACLES 5
+#define MAX_PLAYERS 30
 
-// define hiscore e playername como variáveis globais
-int hiscore = 0;
-char playername[25];
 
 // Cria o objeto obstaculo 
 typedef struct Obstacle {
@@ -23,6 +21,35 @@ typedef struct {
     char playerName[25];
     int playerScore;
 } Ranking;
+
+// Recebe o número máximo de jogadores
+Ranking players[MAX_PLAYERS];
+
+// Define variáveis globais que serão utilizados como ponteiros
+int playerCount = 0;
+int currentPlayer = 0;
+
+// Função para a comparação dos pontos dos jogadores
+int comparePlayersByScore(const void *a, const void *b) {
+    const Ranking *rankingA = (const Ranking *)a;
+    const Ranking *rankingB = (const Ranking *)b;
+    return rankingB->playerScore - rankingA->playerScore;
+}
+
+// Adiciona um novo jogador
+void AddPlayer() {
+    if (playerCount >= MAX_PLAYERS) {
+        printf("Número máximo de jogadores atingido!\n");
+        return;
+    }
+    
+    printf("Digite o nome do jogador: ");
+    scanf("%24s", players[playerCount].playerName);
+    players[playerCount].playerScore = 0;
+    
+    currentPlayer = playerCount;
+    playerCount++;
+}
 
 // Reseta o estado do jogo, assim as variaveis voltam ao padrao original
 void ResetGame(float *xPos, float *yPos, float *velY, int *score, Obstacle obstacles[], int screenWidth, float groundY, int size) {
@@ -39,38 +66,19 @@ void ResetGame(float *xPos, float *yPos, float *velY, int *score, Obstacle obsta
     }
 }
 
-// Função para a comparação dos pontos dos jogadores
-int comparePlayersByScore(const void *a, const void *b) {
-    const Ranking *rankingA = (const Ranking *)a;
-    const Ranking *rankingB = (const Ranking *)b;
-    return rankingB->playerScore - rankingA->playerScore;
-}
-
 // Mostra a tela de ranking quando pressionado a tecla c 
-void RankingScreen(const char *playername, int hiscore) {
-    Ranking ranking[25] = {
-        {"vinizin", 1203},
-        {"gabeVerdin", 980},
-        {"Willian", 345},
-        {"", 0},
-        {"leozao", 200},
-    };
-    
-    strncpy(ranking[3].playerName, playername, sizeof(ranking[3].playerName) - 1);
-    ranking[3].playerName[sizeof(ranking[3].playerName) - 1] = '\0';
-    ranking[3].playerScore = hiscore;
-    
-    int sizeStruct = sizeof(ranking) / sizeof(ranking[0]);
-    
+void RankingScreen() {
+
     // Ordenação do ranking
-    qsort(ranking, sizeStruct, sizeof(Ranking), comparePlayersByScore);
+    qsort(players, playerCount, sizeof(Ranking), comparePlayersByScore);
     
+    // Mostra o ranking de forma ordenada
     while (!IsKeyPressed(KEY_Q)) {
         BeginDrawing();
             ClearBackground(BLACK);
             DrawText("Ranking", 260, 20, 40, GOLD);
-            for (int i = 0; i < 5; i++) {
-                DrawText(TextFormat("%d. %s %d", i + 1, ranking[i].playerName, ranking[i].playerScore), 240, 120 + i * 40, 30, WHITE);
+            for (int i = 0; playerCount && i < 5; i++) {
+            DrawText(TextFormat("%d. %s - %d", i + 1, players[i].playerName, players[i].playerScore), 260, 120 + i * 30, 34, WHITE);
             }
             
             DrawText("Press Q to return", 260, 400, 20, GRAY);
@@ -84,19 +92,21 @@ void StartGame(int screenWidth, int screenHeight) {
     while (!IsKeyPressed(KEY_S)) {
         BeginDrawing();
             ClearBackground(BLACK);
-            DrawText("PetRun", screenWidth/2 - 160, screenHeight/2.5 - 70,40, WHITE);
+            DrawText("BlockRun", screenWidth/2 - 160, screenHeight/2.5 - 70,40, WHITE);
             DrawText("Start Game (S)", screenWidth/2 - 160, screenHeight/2.5,40, WHITE);
-            DrawText("Ranking (C)", screenWidth/2 - 160, screenHeight/2.5 + 80, 40, WHITE);
-            DrawText("Exit Game (E)", screenWidth/2 - 160, screenHeight/2.5 + 40, 40, WHITE);
+            DrawText("Ranking (C)", screenWidth/2 - 160, screenHeight/2.5 + 40, 40, WHITE);
+            DrawText("Add Player (A)", screenWidth / 2 - 160, screenHeight / 2.5 + 80, 40, WHITE);
+            DrawText("Exit Game (E)", screenWidth/2 - 160, screenHeight/2.5 + 120, 40, WHITE);
         EndDrawing();
         
         if (IsKeyPressed(KEY_S)) break;
         if (IsKeyPressed(KEY_E)) CloseWindow();
-        if (IsKeyPressed(KEY_C)) RankingScreen(playername, hiscore);
+        if (IsKeyPressed(KEY_C)) RankingScreen();
+        if (IsKeyPressed(KEY_A)) AddPlayer();
     }
 } 
 
-
+// Função Main
 int main(void) {
     // Variaveis
     const int screenWidth = 800;
@@ -121,8 +131,7 @@ int main(void) {
     yPos = groundY - size;
     bool gameOver = false;
     
-    printf("Digite o nome do jogador: ");
-    scanf("%24s", playername);
+    AddPlayer();
     
     // Gera obstaculos aleatorios
     for (int i = 0; i < NUM_OBSTACLES; i++) {
@@ -133,7 +142,7 @@ int main(void) {
     }
     
     // Inicia a tela do jogo
-    InitWindow(screenWidth, screenHeight, "PetRun");
+    InitWindow(screenWidth, screenHeight, "BlockRun");
     SetTargetFPS(60);
     
     // Reseta o jogo
@@ -145,6 +154,7 @@ int main(void) {
     // Deixa o jogo em loop ate ser fechado
     while(!WindowShouldClose()){
         
+        // Frame rate
         float dt = GetFrameTime();
         
         if (!gameOver) {
@@ -174,7 +184,7 @@ int main(void) {
                 StartGame(screenWidth, screenHeight);
             }
             
-            // Movimenta obstáculos
+            // Adiciona os obstáculos
             for (int i = 0; i < NUM_OBSTACLES; i++) {
                 obstacles[i].x -= obstacleSpeed * dt;
                 
@@ -194,10 +204,11 @@ int main(void) {
             // Score aumenta somente se não estiver em game over
             score ++;
             
-            // Atualiza highscore
-            if (score > hiscore) {
-                hiscore = score;
+            // Atualiza score
+            if (score > players[currentPlayer].playerScore) {
+                players[currentPlayer].playerScore = score;
             }
+            
         }        
         // Desenha
         BeginDrawing();
@@ -207,7 +218,7 @@ int main(void) {
                 DrawRectangle((int)xPos, (int)yPos, size, size, RED);
                 DrawLine(0, groundY, screenWidth, groundY, WHITE);
                 DrawText(TextFormat("Score: %d", score), 25, 20, 20, WHITE);
-                DrawText(TextFormat("High Score: %d", hiscore), 25, 50, 20, GREEN);
+                DrawText(TextFormat("High Score: %d", players[currentPlayer].playerScore), 25, 50, 20, GREEN);
                 DrawText("Press R to restart", 600, 25, 14, WHITE);
                 DrawText("Press Q to go to the menu", 600, 5, 14, WHITE);
                 
@@ -225,7 +236,7 @@ int main(void) {
                 DrawText("Press R to Restart", screenWidth/2 - 120, screenHeight/2.5 + 40, 20, WHITE);
                 DrawText("Press Q to return", screenWidth/2 - 120, screenHeight/2.5 + 60, 20, WHITE);
                 DrawText(TextFormat("Your Score: %d", score), screenWidth/2 - 120, screenHeight/2.5 + 100, 20, BLUE);
-                DrawText(TextFormat("High Score: %d", hiscore), screenWidth/2 - 120, screenHeight/2.5 + 120, 20, GREEN);
+                DrawText(TextFormat("High Score: %d", players[currentPlayer].playerScore), screenWidth/2 - 120, screenHeight/2.5 + 120, 20, GREEN);
                 
                 if (IsKeyPressed(KEY_R)) {
                     ResetGame(&xPos, &yPos, &velY, &score, obstacles, screenWidth, groundY, size);
@@ -237,6 +248,10 @@ int main(void) {
                     StartGame(screenWidth, screenHeight);
                     gameOver = false;
                 } 
+                
+                if (IsKeyPressed(KEY_A)) {
+                    AddPlayer();
+                }
             }
         EndDrawing();
     }
