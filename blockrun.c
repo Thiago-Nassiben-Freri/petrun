@@ -5,7 +5,7 @@
 #include <time.h>
 
 #define NUM_OBSTACLES 5
-#define MAX_PLAYERS 30
+#define MAX_PLAYERS 35
 
 
 // Cria o objeto obstaculo 
